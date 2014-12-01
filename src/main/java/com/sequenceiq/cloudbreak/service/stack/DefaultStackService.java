@@ -144,7 +144,7 @@ public class DefaultStackService implements StackService {
         stack.setOwner(user.getUserId());
         stack.setAccount(user.getAccount());
         stack.setHash(generateHash(stack));
-        Optional<String> result = provisionSetups.get(stack.getTemplate().cloudPlatform()).preProvisionCheck(stack);
+        Optional<String> result = provisionSetups.get(stack.cloudPlatform()).preProvisionCheck(stack);
         if (result.isPresent()) {
             throw new BadRequestException(result.orNull());
         } else {
@@ -168,7 +168,7 @@ public class DefaultStackService implements StackService {
             throw new NotFoundException(String.format("Stack '%s' not found", id));
         }
         LOGGER.info("Publishing {} event.", ReactorConfig.DELETE_REQUEST_EVENT);
-        reactor.notify(ReactorConfig.DELETE_REQUEST_EVENT, Event.wrap(new StackDeleteRequest(stack.getTemplate().cloudPlatform(), stack.getId())));
+        reactor.notify(ReactorConfig.DELETE_REQUEST_EVENT, Event.wrap(new StackDeleteRequest(stack.cloudPlatform(), stack.getId())));
     }
 
     @Override
@@ -183,7 +183,7 @@ public class DefaultStackService implements StackService {
             stackUpdater.updateStackStatus(stackId, Status.START_IN_PROGRESS, "Cluster infrastructure is now starting.");
             LOGGER.info("Publishing {} event", ReactorConfig.STACK_STATUS_UPDATE_EVENT);
             reactor.notify(ReactorConfig.STACK_STATUS_UPDATE_EVENT,
-                    Event.wrap(new StackStatusUpdateRequest(stack.getTemplate().cloudPlatform(), stack.getId(), status)));
+                    Event.wrap(new StackStatusUpdateRequest(stack.cloudPlatform(), stack.getId(), status)));
         } else {
             Status clusterStatus = clusterRepository.findOneWithLists(stack.getCluster().getId()).getStatus();
             if (Status.STOP_IN_PROGRESS.equals(clusterStatus)) {
@@ -199,7 +199,7 @@ public class DefaultStackService implements StackService {
                 }
                 LOGGER.info("Publishing {} event.", ReactorConfig.STACK_STATUS_UPDATE_EVENT);
                 reactor.notify(ReactorConfig.STACK_STATUS_UPDATE_EVENT,
-                        Event.wrap(new StackStatusUpdateRequest(stack.getTemplate().cloudPlatform(), stack.getId(), status)));
+                        Event.wrap(new StackStatusUpdateRequest(stack.cloudPlatform(), stack.getId(), status)));
             }
         }
     }
@@ -239,14 +239,14 @@ public class DefaultStackService implements StackService {
         LOGGER.info("Publishing {} event [scalingAdjustment: '{}']", ReactorConfig.UPDATE_INSTANCES_REQUEST_EVENT,
                 hostGroupAdjustmentJson.getScalingAdjustment());
         reactor.notify(ReactorConfig.UPDATE_INSTANCES_REQUEST_EVENT,
-                Event.wrap(new UpdateInstancesRequest(stack.getTemplate().cloudPlatform(), stack.getId(), hostGroupAdjustmentJson.getScalingAdjustment())));
+                Event.wrap(new UpdateInstancesRequest(stack.cloudPlatform(), stack.getId(), hostGroupAdjustmentJson.getScalingAdjustment())));
     }
 
     @Override
     public StackDescription getStackDescription(Stack stack) {
         MDCBuilder.buildMdcContext(stack);
         ambariClusterConnector.checkClusterState(stack);
-        CloudPlatform cp = stack.getTemplate().cloudPlatform();
+        CloudPlatform cp = stack.cloudPlatform();
         LOGGER.debug("Getting stack description for cloud platform: {} ...", cp);
         StackDescription description = describeContext.describeStackWithResources(stack);
         LOGGER.debug("Found stack description {}", description.getClass());

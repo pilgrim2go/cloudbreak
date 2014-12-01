@@ -57,7 +57,6 @@ public class AzureCloudServiceResourceBuilder extends AzureSimpleInstanceResourc
     @Override
     public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
-        AzureTemplate azureTemplate = (AzureTemplate) stack.getTemplate();
         AzureCredential azureCredential = (AzureCredential) stack.getCredential();
         String vmName = getVmName(po.filterResourcesByType(ResourceType.AZURE_NETWORK).get(0).getResourceName(), index)
                 + String.valueOf(new Date().getTime());
@@ -66,7 +65,7 @@ public class AzureCloudServiceResourceBuilder extends AzureSimpleInstanceResourc
         }
         Map<String, String> props = new HashMap<>();
         props.put(NAME, vmName);
-        props.put(DESCRIPTION, azureTemplate.getDescription());
+        props.put(DESCRIPTION, templateGroup.getTemplate().getDescription());
         props.put(AFFINITYGROUP, po.getCommonName());
         AzureClient azureClient = po.getNewAzureClient(azureCredential);
         HttpResponseDecorator cloudServiceResponse = (HttpResponseDecorator) azureClient.createCloudService(props);

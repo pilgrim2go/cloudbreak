@@ -48,7 +48,7 @@ public class DescribeContext {
     public StackDescription describeStackWithResources(Stack actualStack) {
         Stack stack = stackRepository.findById(actualStack.getId());
         Credential credential = stack.getCredential();
-        final CloudPlatform cloudPlatform = credential.cloudPlatform();
+        final CloudPlatform cloudPlatform = actualStack.cloudPlatform();
         if (cloudPlatform.isWithTemplate()) {
             return cloudPlatformConnectors.get(cloudPlatform).describeStackWithResources(stack, stack.getCredential());
         } else {

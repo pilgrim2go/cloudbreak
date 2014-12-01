@@ -21,7 +21,7 @@ import com.sequenceiq.cloud.azure.client.AzureClientUtil;
 import com.sequenceiq.cloudbreak.conf.ReactorConfig;
 import com.sequenceiq.cloudbreak.controller.InternalServerException;
 import com.sequenceiq.cloudbreak.domain.AzureCredential;
-import com.sequenceiq.cloudbreak.domain.AzureTemplate;
+import com.sequenceiq.cloudbreak.domain.AzureLocation;
 import com.sequenceiq.cloudbreak.domain.CloudPlatform;
 import com.sequenceiq.cloudbreak.domain.Credential;
 import com.sequenceiq.cloudbreak.domain.Stack;
@@ -210,7 +210,7 @@ public class AzureProvisionSetup implements ProvisionSetup {
                 Map<String, String> params = new HashMap<>();
                 params.put(AzureStackUtil.NAME, affinityGroupName);
                 params.put(DESCRIPTION, VM_COMMON_NAME);
-                params.put(LOCATION, ((AzureTemplate) stack.getTemplate()).getLocation().location());
+                params.put(LOCATION, AzureLocation.valueOf(stack.getRegion()).location());
                 azureClient.createAffinityGroup(params);
             } else {
                 LOGGER.error(String.format("Error occurs on %s stack under the affinity group creation", stack.getId()), ex);

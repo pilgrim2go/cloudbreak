@@ -64,7 +64,6 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
         Stack stack = stackRepository.findById(po.getStackId());
         String vmName = filterResourcesByType(resources, ResourceType.AZURE_CLOUD_SERVICE).get(0).getResourceName();
         String internalIp = "172.16.0." + (index + VALID_IP_RANGE_START);
-        AzureTemplate azureTemplate = (AzureTemplate) stack.getTemplate();
         AzureCredential azureCredential = (AzureCredential) stack.getCredential();
         byte[] encoded = Base64.encodeBase64(vmName.getBytes());
         String label = new String(encoded);
@@ -85,7 +84,8 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
         props.put(DEPLOYMENTSLOT, PRODUCTION);
         props.put(LABEL, label);
         props.put(IMAGENAME,
-                azureTemplate.getImageName().equals(AzureStackUtil.IMAGE_NAME) ? po.getOsImageName() : azureTemplate.getImageName());
+                ((AzureTemplate) templateGroup.getTemplate()).getImageName().equals(AzureStackUtil.IMAGE_NAME) ?
+                        po.getOsImageName() :  ((AzureTemplate) templateGroup.getTemplate()).getImageName());
         props.put(IMAGESTOREURI, buildimageStoreUri(po.getCommonName(), vmName));
         props.put(HOSTNAME, vmName);
         props.put(USERNAME, DEFAULT_USER_NAME);
@@ -106,10 +106,10 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
         }
         props.put(SSHPUBLICKEYPATH, String.format("/home/%s/.ssh/authorized_keys", DEFAULT_USER_NAME));
         props.put(AFFINITYGROUP, po.getCommonName());
-        if (azureTemplate.getVolumeCount() > 0) {
+        if (templateGroup.getTemplate().getVolumeCount() > 0) {
             List<Integer> disks = new ArrayList<>();
-            for (int i = 0; i < azureTemplate.getVolumeCount(); i++) {
-                disks.add(azureTemplate.getVolumeSize());
+            for (int i = 0; i <  templateGroup.getTemplate().getVolumeCount(); i++) {
+                disks.add(templateGroup.getTemplate().getVolumeSize());
             }
             props.put(DISKS, disks);
         }
@@ -120,7 +120,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
         props.put(CUSTOMDATA, new String(Base64.encodeBase64(po.getUserData().getBytes())));
         props.put(VIRTUALNETWORKNAME, po.filterResourcesByType(ResourceType.AZURE_NETWORK).get(0).getResourceName());
         props.put(PORTS, ports);
-        props.put(VMTYPE, AzureVmType.valueOf(azureTemplate.getVmType()).vmType().replaceAll(" ", ""));
+        props.put(VMTYPE, AzureVmType.valueOf(((AzureTemplate) templateGroup.getTemplate()).getVmType()).vmType().replaceAll(" ", ""));
         AzureClient azureClient = po.getNewAzureClient(azureCredential);
         HttpResponseDecorator virtualMachineResponse = (HttpResponseDecorator) azureClient.createVirtualMachine(props);
         String requestId = (String) azureClient.getRequestId(virtualMachineResponse);
