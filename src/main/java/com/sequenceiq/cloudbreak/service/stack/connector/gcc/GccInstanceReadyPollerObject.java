@@ -5,15 +5,15 @@ import com.sequenceiq.cloudbreak.domain.GccTemplate;
 import com.sequenceiq.cloudbreak.domain.Stack;
 import com.sequenceiq.cloudbreak.service.stack.connector.gcc.domain.GccZone;
 
-public class GccImageReadyPollerObject {
+public class GccInstanceReadyPollerObject {
 
-    private String name;
-    private Stack stack;
     private Compute compute;
+    private Stack stack;
+    private String name;
     private GccTemplate template;
     private GccZone gccZone;
 
-    public GccImageReadyPollerObject(Compute compute, Stack stack, String name, GccTemplate template, GccZone gccZone) {
+    public GccInstanceReadyPollerObject(Compute compute, Stack stack, String name, GccTemplate template, GccZone gccZone) {
         this.compute = compute;
         this.stack = stack;
         this.name = name;
@@ -37,12 +37,12 @@ public class GccImageReadyPollerObject {
         this.gccZone = gccZone;
     }
 
-    public String getName() {
-        return name;
+    public Compute getCompute() {
+        return compute;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setCompute(Compute compute) {
+        this.compute = compute;
     }
 
     public Stack getStack() {
@@ -53,11 +53,11 @@ public class GccImageReadyPollerObject {
         this.stack = stack;
     }
 
-    public Compute getCompute() {
-        return compute;
+    public String getName() {
+        return name;
     }
 
-    public void setCompute(Compute compute) {
-        this.compute = compute;
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -24,30 +24,43 @@ import javax.persistence.Version;
 
 @Entity
 @Table(name = "Stack", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "account", "name" })
+        @UniqueConstraint(columnNames = {"account", "name"})
 })
 @NamedQueries({
         @NamedQuery(
                 name = "Stack.findById",
                 query = "SELECT c FROM Stack c "
+                        + "LEFT JOIN FETCH c.resources "
+                        + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.id= :id"),
         @NamedQuery(
                 name = "Stack.findAllStackForTemplate",
                 query = "SELECT c FROM Stack c "
+                        + "LEFT JOIN FETCH c.resources "
+                        + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.template.id= :id"),
         @NamedQuery(
                 name = "Stack.findStackForCluster",
                 query = "SELECT c FROM Stack c "
+                        + "LEFT JOIN FETCH c.resources "
+                        + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.cluster.id= :id"),
         @NamedQuery(
                 name = "Stack.findStackWithListsForCluster",
                 query = "SELECT c FROM Stack c "
                         + "LEFT JOIN FETCH c.resources "
                         + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.cluster.id= :id"),
         @NamedQuery(
                 name = "Stack.findRequestedStacksWithCredential",
                 query = "SELECT c FROM Stack c "
+                        + "LEFT JOIN FETCH c.resources "
+                        + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.credential.id= :credentialId "
                         + "AND c.status= 'REQUESTED'"),
         @NamedQuery(
@@ -55,6 +68,7 @@ import javax.persistence.Version;
                 query = "SELECT c FROM Stack c "
                         + "LEFT JOIN FETCH c.resources "
                         + "LEFT JOIN FETCH c.instanceMetaData "
+                        + "LEFT JOIN FETCH c.templateGroups "
                         + "WHERE c.id= :id"),
         @NamedQuery(
                 name = "Stack.findByStackResourceName",
@@ -63,15 +77,24 @@ import javax.persistence.Version;
         @NamedQuery(
                 name = "Stack.findForUser",
                 query = "SELECT s FROM Stack s "
+                        + "LEFT JOIN FETCH s.resources "
+                        + "LEFT JOIN FETCH s.instanceMetaData "
+                        + "LEFT JOIN FETCH s.templateGroups "
                         + "WHERE s.owner= :user"),
         @NamedQuery(
                 name = "Stack.findPublicsInAccount",
                 query = "SELECT s FROM Stack s "
+                        + "LEFT JOIN FETCH s.resources "
+                        + "LEFT JOIN FETCH s.instanceMetaData "
+                        + "LEFT JOIN FETCH s.templateGroups "
                         + "WHERE s.account= :account "
                         + "AND s.publicInAccount= true"),
         @NamedQuery(
                 name = "Stack.findAllInAccount",
                 query = "SELECT s FROM Stack s "
+                        + "LEFT JOIN FETCH s.resources "
+                        + "LEFT JOIN FETCH s.instanceMetaData "
+                        + "LEFT JOIN FETCH s.templateGroups "
                         + "WHERE s.account= :account "),
         @NamedQuery(
                 name = "Stack.findByAmbari",
@@ -91,7 +114,11 @@ import javax.persistence.Version;
                         + "WHERE t.owner= :owner and t.name= :name"),
         @NamedQuery(
                 name = "Stack.findByCredential",
-                query = "SELECT t FROM Stack t WHERE t.credential.id= :credentialId")
+                query = "SELECT t FROM Stack t WHERE t.credential.id= :credentialId"
+                        + "LEFT JOIN FETCH s.resources "
+                        + "LEFT JOIN FETCH s.instanceMetaData "
+                        + "LEFT JOIN FETCH s.templateGroups "
+                        + "WHERE t.owner= :owner and t.name= :name")
 })
 public class Stack implements ProvisionEntity {
 
@@ -107,6 +134,7 @@ public class Stack implements ProvisionEntity {
     private String account;
 
     private boolean publicInAccount;
+    private String region;
 
     private Integer nodeCount;
     @Column(length = 1000000, columnDefinition = "TEXT")
@@ -145,6 +173,17 @@ public class Stack implements ProvisionEntity {
 
     @Version
     private Long version;
+
+    @OneToMany(mappedBy = "stack", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TemplateGroup> templateGroups = new HashSet<>();
+
+    public Set<TemplateGroup> getTemplateGroups() {
+        return templateGroups;
+    }
+
+    public void setTemplateGroups(Set<TemplateGroup> templateGroups) {
+        this.templateGroups = templateGroups;
+    }
 
     public Long getId() {
         return id;
@@ -306,6 +345,14 @@ public class Stack implements ProvisionEntity {
         this.instanceMetaData = instanceMetaData;
     }
 
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
     public Set<Resource> getResources() {
         return resources;
     }
@@ -333,13 +380,19 @@ public class Stack implements ProvisionEntity {
         return null;
     }
 
-    public Resource getResourceByName(String name) {
-        for (Resource resource : resources) {
-            if (name.equals(resource.getResourceName())) {
-                return resource;
+    public TemplateGroup getTemplateAsGroup(String group) {
+        for (TemplateGroup templateGroup : templateGroups) {
+            if (group.equals(templateGroup.getGroupName())) {
+                return templateGroup;
             }
         }
         return null;
+    }
+
+    public List<TemplateGroup> getTemplateSetAsList() {
+        List<TemplateGroup> templateGroupsList = new ArrayList();
+        templateGroupsList.addAll(templateGroups);
+        return templateGroupsList;
     }
 
     public Integer getMultiplier() {

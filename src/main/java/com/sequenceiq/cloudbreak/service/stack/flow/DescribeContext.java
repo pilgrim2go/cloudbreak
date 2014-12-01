@@ -58,7 +58,7 @@ public class DescribeContext {
                 final DescribeContextObject describeContextObject = resourceBuilderInit.describeInit(stack);
                 for (ResourceBuilder resourceBuilder : networkResourceBuilders.get(cloudPlatform)) {
                     for (Resource resource : stack.getResourcesByType(resourceBuilder.resourceType())) {
-                        Optional<String> describe = resourceBuilder.describe(resource, describeContextObject);
+                        Optional<String> describe = resourceBuilder.describe(resource, describeContextObject, stack.getRegion());
                         if (describe.isPresent()) {
                             dSD.getResources().add(describe.get());
                         }
@@ -67,10 +67,11 @@ public class DescribeContext {
                 for (final ResourceBuilder resourceBuilder : instanceResourceBuilders.get(cloudPlatform)) {
                     List<Future<Optional<String>>> futures = new ArrayList<>();
                     for (final Resource resource : stack.getResourcesByType(resourceBuilder.resourceType())) {
+                        final Stack finalStack = stack;
                         Future<Optional<String>> submit = resourceBuilderExecutor.submit(new Callable<Optional<String>>() {
                             @Override
                             public Optional<String> call() throws Exception {
-                                return resourceBuilder.describe(resource, describeContextObject);
+                                return resourceBuilder.describe(resource, describeContextObject, finalStack.getRegion());
                             }
                         });
                         futures.add(submit);

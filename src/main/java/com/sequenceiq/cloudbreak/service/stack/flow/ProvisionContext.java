@@ -20,6 +20,7 @@ import com.sequenceiq.cloudbreak.domain.CloudPlatform;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.Stack;
 import com.sequenceiq.cloudbreak.domain.Status;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.logger.MDCBuilder;
 import com.sequenceiq.cloudbreak.repository.RetryingStackUpdater;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
@@ -81,30 +82,35 @@ public class ProvisionContext {
                     final ProvisionContextObject pCO =
                             resourceBuilderInit.provisionInit(stack, userDataBuilder.build(cloudPlatform, stack.getHash(), userDataParams));
                     for (ResourceBuilder resourceBuilder : networkResourceBuilders.get(cloudPlatform)) {
-                        List<Resource> resourceList = resourceBuilder.create(pCO, 0, new ArrayList<Resource>());
+                        List<Resource> resourceList = resourceBuilder.create(pCO, 0, new ArrayList<Resource>(),
+                                stack.getTemplateSetAsList().get(0), stack.getRegion());
                         stackUpdater.addStackResources(stack.getId(), resourceList);
                         resourceSet.addAll(resourceList);
                         pCO.getNetworkResources().addAll(resourceList);
                     }
                     List<Future<List<Resource>>> futures = new ArrayList<>();
-                    for (int i = 0; i < stack.getNodeCount(); i++) {
-                        final int index = i;
-                        final Stack finalStack = stack;
-                        Future<List<Resource>> submit = resourceBuilderExecutor.submit(new Callable<List<Resource>>() {
-                            @Override
-                            public List<Resource> call() throws Exception {
-                                LOGGER.info("Node {}. creation starting", index);
-                                List<Resource> resources = new ArrayList<>();
-                                for (final ResourceBuilder resourceBuilder : instanceResourceBuilders.get(cloudPlatform)) {
-                                    List<Resource> resourceList = resourceBuilder.create(pCO, index, resources);
-                                    stackUpdater.addStackResources(finalStack.getId(), resourceList);
-                                    resources.addAll(resourceList);
-                                    LOGGER.info("Node {}. creation in progress resource {} creation finished.", index, resourceBuilder.resourceBuilderType());
+                    int nodeindex = 0;
+                    for (final TemplateGroup stringTemplateGroupEntry : stack.getTemplateGroups()) {
+                        for (int i = 0; i < stringTemplateGroupEntry.getNodeCount(); i++) {
+                            final int index = nodeindex;
+                            final Stack finalStack = stack;
+                            Future<List<Resource>> submit = resourceBuilderExecutor.submit(new Callable<List<Resource>>() {
+                                @Override
+                                public List<Resource> call() throws Exception {
+                                    LOGGER.info("Node {}. creation starting", index);
+                                    List<Resource> resources = new ArrayList<>();
+                                    for (final ResourceBuilder resourceBuilder : instanceResourceBuilders.get(cloudPlatform)) {
+                                        List<Resource> resourceList = resourceBuilder.create(pCO, index, resources, stringTemplateGroupEntry, finalStack.getRegion());
+                                        stackUpdater.addStackResources(finalStack.getId(), resourceList);
+                                        resources.addAll(resourceList);
+                                        LOGGER.info("Node {}. creation in progress resource {} creation finished.", index, resourceBuilder.resourceBuilderType());
+                                    }
+                                    return resources;
                                 }
-                                return resources;
-                            }
-                        });
-                        futures.add(submit);
+                            });
+                            futures.add(submit);
+                            nodeindex++;
+                        }
                     }
                     Exception exception = null;
                     for (Future<List<Resource>> future : futures) {

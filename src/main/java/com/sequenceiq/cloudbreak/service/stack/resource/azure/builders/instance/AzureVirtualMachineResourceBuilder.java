@@ -30,6 +30,7 @@ import com.sequenceiq.cloudbreak.domain.Port;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.PollingService;
 import com.sequenceiq.cloudbreak.service.stack.connector.azure.AzureStackUtil;
@@ -59,7 +60,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
     private AzureStackUtil azureStackUtil;
 
     @Override
-    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
         String vmName = filterResourcesByType(resources, ResourceType.AZURE_CLOUD_SERVICE).get(0).getResourceName();
         String internalIp = "172.16.0." + (index + VALID_IP_RANGE_START);
@@ -124,7 +125,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
         HttpResponseDecorator virtualMachineResponse = (HttpResponseDecorator) azureClient.createVirtualMachine(props);
         String requestId = (String) azureClient.getRequestId(virtualMachineResponse);
         waitUntilComplete(azureClient, requestId);
-        return Arrays.asList(new Resource(resourceType(), vmName, stack));
+        return Arrays.asList(new Resource(resourceType(), vmName, stack, templateGroup.getGroupName()));
     }
 
     private String buildimageStoreUri(String commonName, String vmName) {
@@ -132,7 +133,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
     }
 
     @Override
-    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO) throws Exception {
+    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO, String region) throws Exception {
         Stack stack = stackRepository.findById(aDCO.getStackId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         try {
@@ -152,7 +153,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
     }
 
     @Override
-    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO) throws Exception {
+    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO, String region) throws Exception {
         Stack stack = stackRepository.findById(aDCO.getStackId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         try {
@@ -165,7 +166,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
     }
 
     @Override
-    public Boolean start(AzureStartStopContextObject aSSCO, Resource resource) {
+    public Boolean start(AzureStartStopContextObject aSSCO, Resource resource, String region) {
         Stack stack = stackRepository.findById(aSSCO.getStack().getId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         boolean started = setStackState(aSSCO.getStack().getId(), resource, aSSCO.getNewAzureClient(credential), false);
@@ -181,7 +182,7 @@ public class AzureVirtualMachineResourceBuilder extends AzureSimpleInstanceResou
     }
 
     @Override
-    public Boolean stop(AzureStartStopContextObject aSSCO, Resource resource) {
+    public Boolean stop(AzureStartStopContextObject aSSCO, Resource resource, String region) {
         Stack stack = stackRepository.findById(aSSCO.getStack().getId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         return setStackState(aSSCO.getStack().getId(), resource, aSSCO.getNewAzureClient(credential), true);

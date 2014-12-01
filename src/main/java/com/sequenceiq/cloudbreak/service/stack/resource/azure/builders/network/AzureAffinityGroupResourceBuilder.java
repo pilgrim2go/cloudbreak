@@ -15,10 +15,10 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Optional;
 import com.sequenceiq.cloudbreak.controller.InternalServerException;
 import com.sequenceiq.cloudbreak.controller.StackCreationFailureException;
-import com.sequenceiq.cloudbreak.domain.AzureTemplate;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.AzureSimpleNetworkResourceBuilder;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.model.AzureDeleteContextObject;
@@ -36,17 +36,16 @@ public class AzureAffinityGroupResourceBuilder extends AzureSimpleNetworkResourc
     private StackRepository stackRepository;
 
     @Override
-    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
-        AzureTemplate template = (AzureTemplate) stack.getTemplate();
         try {
             po.getAzureClient().getAffinityGroup(po.getCommonName());
         } catch (Exception ex) {
             if (((HttpResponseException) ex).getStatusCode() == NOT_FOUND) {
                 Map<String, String> props = new HashMap<>();
                 props.put(NAME, po.getCommonName());
-                props.put(LOCATION, template.getLocation().location());
-                props.put(DESCRIPTION, template.getDescription());
+                props.put(LOCATION, region);
+                props.put(DESCRIPTION, templateGroup.getTemplate().getDescription());
                 HttpResponseDecorator affinityResponse = (HttpResponseDecorator) po.getAzureClient().createAffinityGroup(props);
                 String requestId = (String) po.getAzureClient().getRequestId(affinityResponse);
                 waitUntilComplete(po.getAzureClient(), requestId);
@@ -62,12 +61,12 @@ public class AzureAffinityGroupResourceBuilder extends AzureSimpleNetworkResourc
     }
 
     @Override
-    public Boolean delete(Resource resource, AzureDeleteContextObject azureDeleteContextObject) throws Exception {
+    public Boolean delete(Resource resource, AzureDeleteContextObject azureDeleteContextObject, String region) throws Exception {
         return true;
     }
 
     @Override
-    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO) throws Exception {
+    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO, String region) throws Exception {
         try {
             Object affinityGroup = aDCO.getAzureClient().getAffinityGroup(resource.getResourceName());
             return Optional.fromNullable(affinityGroup.toString());

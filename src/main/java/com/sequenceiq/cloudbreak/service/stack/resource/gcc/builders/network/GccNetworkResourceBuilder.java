@@ -18,14 +18,15 @@ import com.google.common.base.Optional;
 import com.sequenceiq.cloudbreak.controller.InternalServerException;
 import com.sequenceiq.cloudbreak.controller.json.JsonHelper;
 import com.sequenceiq.cloudbreak.domain.GccCredential;
-import com.sequenceiq.cloudbreak.domain.GccTemplate;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.PollingService;
 import com.sequenceiq.cloudbreak.service.stack.connector.gcc.GccRemoveCheckerStatus;
 import com.sequenceiq.cloudbreak.service.stack.connector.gcc.GccRemoveReadyPollerObject;
+import com.sequenceiq.cloudbreak.service.stack.connector.gcc.domain.GccZone;
 import com.sequenceiq.cloudbreak.service.stack.resource.gcc.GccSimpleNetworkResourceBuilder;
 import com.sequenceiq.cloudbreak.service.stack.resource.gcc.model.GccDeleteContextObject;
 import com.sequenceiq.cloudbreak.service.stack.resource.gcc.model.GccDescribeContextObject;
@@ -46,7 +47,8 @@ public class GccNetworkResourceBuilder extends GccSimpleNetworkResourceBuilder {
     private JsonHelper jsonHelper;
 
     @Override
-    public List<Resource> create(GccProvisionContextObject contextObject, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(GccProvisionContextObject contextObject, int index, List<Resource> resources, TemplateGroup templateGroup, String region)
+            throws Exception {
         Stack stack = stackRepository.findById(contextObject.getStackId());
         Network network = new Network();
         network.setName(stack.getName());
@@ -57,14 +59,14 @@ public class GccNetworkResourceBuilder extends GccSimpleNetworkResourceBuilder {
     }
 
     @Override
-    public Boolean delete(Resource resource, GccDeleteContextObject d) throws Exception {
+    public Boolean delete(Resource resource, GccDeleteContextObject d, String region) throws Exception {
         Stack stack = stackRepository.findById(d.getStackId());
         try {
-            GccTemplate gccTemplate = (GccTemplate) stack.getTemplate();
             GccCredential gccCredential = (GccCredential) stack.getCredential();
             Operation operation = d.getCompute().networks().delete(gccCredential.getProjectId(), resource.getResourceName()).execute();
-            Compute.ZoneOperations.Get zoneOperations = createZoneOperations(d.getCompute(), gccCredential, gccTemplate, operation);
-            Compute.GlobalOperations.Get globalOperations = createGlobalOperations(d.getCompute(), gccCredential, gccTemplate, operation);
+            Operation execute = d.getCompute().networks().delete(gccCredential.getProjectId(), resource.getResourceName()).execute();
+            Compute.ZoneOperations.Get zoneOperations = createZoneOperations(d.getCompute(), gccCredential, execute, GccZone.valueOf(region));
+            Compute.GlobalOperations.Get globalOperations = createGlobalOperations(d.getCompute(), gccCredential, execute);
             GccRemoveReadyPollerObject gccRemoveReady =
                     new GccRemoveReadyPollerObject(zoneOperations, globalOperations, stack, resource.getResourceName(), operation.getName());
             gccRemoveReadyPollerObjectPollingService.pollWithTimeout(gccRemoveCheckerStatus, gccRemoveReady, POLLING_INTERVAL, MAX_POLLING_ATTEMPTS);
@@ -77,7 +79,7 @@ public class GccNetworkResourceBuilder extends GccSimpleNetworkResourceBuilder {
     }
 
     @Override
-    public Optional<String> describe(Resource resource, GccDescribeContextObject dco) throws Exception {
+    public Optional<String> describe(Resource resource, GccDescribeContextObject dco, String region) throws Exception {
         Stack stack = stackRepository.findById(dco.getStackId());
         GccCredential gccCredential = (GccCredential) stack.getCredential();
         try {
@@ -89,12 +91,12 @@ public class GccNetworkResourceBuilder extends GccSimpleNetworkResourceBuilder {
     }
 
     @Override
-    public Boolean start(GccStartStopContextObject startStopContextObject, Resource resource) {
+    public Boolean start(GccStartStopContextObject startStopContextObject, Resource resource, String region) {
         return true;
     }
 
     @Override
-    public Boolean stop(GccStartStopContextObject startStopContextObject, Resource resource) {
+    public Boolean stop(GccStartStopContextObject startStopContextObject, Resource resource, String region) {
         return true;
     }
 

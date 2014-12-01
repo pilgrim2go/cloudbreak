@@ -77,7 +77,7 @@ public class UpdateInstancesRequestHandler implements Consumer<Event<UpdateInsta
 
     @Override
     public void accept(Event<UpdateInstancesRequest> event) {
-        UpdateInstancesRequest request = event.getData();
+        final UpdateInstancesRequest request = event.getData();
         final CloudPlatform cloudPlatform = request.getCloudPlatform();
         Long stackId = request.getStackId();
         Integer scalingAdjustment = request.getScalingAdjustment();
@@ -106,8 +106,9 @@ public class UpdateInstancesRequestHandler implements Consumer<Event<UpdateInsta
                             public List<Resource> call() throws Exception {
                                 List<Resource> resources = new ArrayList<>();
                                 for (final ResourceBuilder resourceBuilder : instanceResourceBuilders.get(cloudPlatform)) {
-                                    List<Resource> resourceList = resourceBuilder.create(pCO, index, resources);
-                                    resources.addAll(resourceList);
+                                    List<Resource> resourceList = resourceBuilder.create(pCO, index, resources,
+                                            stack.getTemplateSetAsList().get(0), stack.getRegion());
+                                    resources.addAll(new ArrayList<Resource>());
                                 }
                                 return resources;
                             }
@@ -152,7 +153,7 @@ public class UpdateInstancesRequestHandler implements Consumer<Event<UpdateInsta
                                 public Boolean call() throws Exception {
                                     Boolean delete = false;
                                     try {
-                                        delete = resourceBuilder.delete(resource, dCO);
+                                        delete = resourceBuilder.delete(resource, dCO, stack.getRegion());
                                     } catch (HttpResponseException ex) {
                                         LOGGER.error(String.format("Error occurred on stack under the instance remove"), ex);
                                         throw new InternalServerException(

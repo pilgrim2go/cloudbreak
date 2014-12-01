@@ -1,6 +1,8 @@
 package com.sequenceiq.cloudbreak.controller.json;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.constraints.Digits;
@@ -30,6 +32,7 @@ public class StackJson implements JsonEntity {
     private String name;
     @NotNull
     private Long templateId;
+    private String region;
     private String owner;
     private String account;
     private boolean publicInAccount;
@@ -53,6 +56,7 @@ public class StackJson implements JsonEntity {
     private ClusterResponse cluster;
     private String statusReason;
     private Set<InstanceMetaDataJson> metadata = new HashSet<>();
+    private List<TemplateGroupJson> templateGroups = new ArrayList<>();
 
     public StackJson() {
     }
@@ -107,6 +111,14 @@ public class StackJson implements JsonEntity {
         this.templateId = templateId;
     }
 
+    public List<TemplateGroupJson> getTemplateGroups() {
+        return templateGroups;
+    }
+
+    public void setTemplateGroups(List<TemplateGroupJson> templateGroups) {
+        this.templateGroups = templateGroups;
+    }
+
     @JsonProperty("cloudPlatform")
     public CloudPlatform getCloudPlatform() {
         return cloudPlatform;
@@ -123,6 +135,14 @@ public class StackJson implements JsonEntity {
 
     public void setCredentialId(Long credentialId) {
         this.credentialId = credentialId;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 
     @JsonProperty("description")

@@ -19,6 +19,7 @@ import com.sequenceiq.cloudbreak.domain.AzureCredential;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.AzureSimpleNetworkResourceBuilder;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.model.AzureDeleteContextObject;
@@ -36,7 +37,7 @@ public class AzureNetworkResourceBuilder extends AzureSimpleNetworkResourceBuild
     private StackRepository stackRepository;
 
     @Override
-    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
         String name = stack.getName().replaceAll("\\s+", "") + String.valueOf(new Date().getTime());
         if (!po.getAzureClient().getVirtualNetworkConfiguration().toString().contains(name)) {
@@ -54,7 +55,7 @@ public class AzureNetworkResourceBuilder extends AzureSimpleNetworkResourceBuild
     }
 
     @Override
-    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO) throws Exception {
+    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO, String region) throws Exception {
         Stack stack = stackRepository.findById(aDCO.getStackId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         Map<String, String> props;
@@ -74,7 +75,7 @@ public class AzureNetworkResourceBuilder extends AzureSimpleNetworkResourceBuild
     }
 
     @Override
-    public Optional<String> describe(Resource resource, AzureDescribeContextObject azureDescribeContextObject) throws Exception {
+    public Optional<String> describe(Resource resource, AzureDescribeContextObject azureDescribeContextObject, String region) throws Exception {
         return Optional.absent();
     }
 

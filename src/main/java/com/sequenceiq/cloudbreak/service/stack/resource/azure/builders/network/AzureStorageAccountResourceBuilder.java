@@ -15,10 +15,10 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Optional;
 import com.sequenceiq.cloudbreak.controller.InternalServerException;
 import com.sequenceiq.cloudbreak.controller.StackCreationFailureException;
-import com.sequenceiq.cloudbreak.domain.AzureTemplate;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.AzureSimpleNetworkResourceBuilder;
 import com.sequenceiq.cloudbreak.service.stack.resource.azure.model.AzureDeleteContextObject;
@@ -36,16 +36,15 @@ public class AzureStorageAccountResourceBuilder extends AzureSimpleNetworkResour
     private StackRepository stackRepository;
 
     @Override
-    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
-        AzureTemplate template = (AzureTemplate) stack.getTemplate();
         try {
             po.getAzureClient().getStorageAccount(po.getCommonName());
         } catch (Exception ex) {
             if (((HttpResponseException) ex).getStatusCode() == NOT_FOUND) {
                 Map<String, String> props = new HashMap<>();
                 props.put(NAME, po.getCommonName());
-                props.put(DESCRIPTION, template.getDescription());
+                props.put(DESCRIPTION, templateGroup.getTemplate().getDescription());
                 props.put(AFFINITYGROUP, po.getCommonName());
                 HttpResponseDecorator storageResponse = (HttpResponseDecorator) po.getAzureClient().createStorageAccount(props);
                 String requestId = (String) po.getAzureClient().getRequestId(storageResponse);
@@ -62,12 +61,12 @@ public class AzureStorageAccountResourceBuilder extends AzureSimpleNetworkResour
     }
 
     @Override
-    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO) throws Exception {
+    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO, String region) throws Exception {
         return true;
     }
 
     @Override
-    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO) throws Exception {
+    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO, String region) throws Exception {
         try {
             Object storageAccount = aDCO.getAzureClient().getStorageAccount(resource.getResourceName());
             return Optional.fromNullable(storageAccount.toString());

@@ -23,6 +23,7 @@ import com.sequenceiq.cloudbreak.domain.AzureTemplate;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
+import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.PollingService;
 import com.sequenceiq.cloudbreak.service.stack.connector.azure.AzureCloudServiceDeleteTask;
@@ -54,7 +55,7 @@ public class AzureCloudServiceResourceBuilder extends AzureSimpleInstanceResourc
     private PollingService<AzureCloudServiceDeleteTaskContext> azureCloudServiceRemoveReadyPollerObjectPollingService;
 
     @Override
-    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources) throws Exception {
+    public List<Resource> create(AzureProvisionContextObject po, int index, List<Resource> resources, TemplateGroup templateGroup, String region) throws Exception {
         Stack stack = stackRepository.findById(po.getStackId());
         AzureTemplate azureTemplate = (AzureTemplate) stack.getTemplate();
         AzureCredential azureCredential = (AzureCredential) stack.getCredential();
@@ -71,11 +72,11 @@ public class AzureCloudServiceResourceBuilder extends AzureSimpleInstanceResourc
         HttpResponseDecorator cloudServiceResponse = (HttpResponseDecorator) azureClient.createCloudService(props);
         String requestId = (String) azureClient.getRequestId(cloudServiceResponse);
         waitUntilComplete(azureClient, requestId);
-        return Arrays.asList(new Resource(ResourceType.AZURE_CLOUD_SERVICE, vmName, stack));
+        return Arrays.asList(new Resource(ResourceType.AZURE_CLOUD_SERVICE, vmName, stack, templateGroup.getGroupName()));
     }
 
     @Override
-    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO) throws Exception {
+    public Boolean delete(Resource resource, AzureDeleteContextObject aDCO, String region) throws Exception {
         Stack stack = stackRepository.findById(aDCO.getStackId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         AzureCloudServiceDeleteTaskContext azureCloudServiceDeleteTaskContext =
@@ -99,7 +100,7 @@ public class AzureCloudServiceResourceBuilder extends AzureSimpleInstanceResourc
     }
 
     @Override
-    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO) throws Exception {
+    public Optional<String> describe(Resource resource, AzureDescribeContextObject aDCO, String region) throws Exception {
         Stack stack = stackRepository.findById(aDCO.getStackId());
         AzureCredential credential = (AzureCredential) stack.getCredential();
         Map<String, String> props = new HashMap<>();

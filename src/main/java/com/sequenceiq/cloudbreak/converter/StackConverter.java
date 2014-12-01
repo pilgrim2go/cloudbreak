@@ -1,8 +1,10 @@
 package com.sequenceiq.cloudbreak.converter;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import com.sequenceiq.cloudbreak.controller.json.ClusterResponse;
 import com.sequenceiq.cloudbreak.controller.json.StackJson;
+import com.sequenceiq.cloudbreak.controller.json.TemplateGroupJson;
 import com.sequenceiq.cloudbreak.domain.Stack;
 import com.sequenceiq.cloudbreak.domain.StackDescription;
 import com.sequenceiq.cloudbreak.domain.Status;
@@ -29,6 +32,9 @@ public class StackConverter extends AbstractConverter<StackJson, Stack> {
 
     @Autowired
     private ClusterConverter clusterConverter;
+
+    @Autowired
+    private TemplateGroupConverter templateGroupConverter;
 
     @Autowired
     private MetaDataConverter metaDataConverter;
@@ -51,6 +57,10 @@ public class StackConverter extends AbstractConverter<StackJson, Stack> {
         stackJson.setUserName(entity.getUserName());
         stackJson.setPassword(entity.getPassword());
         stackJson.setHash(entity.getHash());
+        stackJson.setRegion(entity.getRegion());
+        List<TemplateGroupJson> templateGroups = new ArrayList<>();
+        templateGroups.addAll(templateGroupConverter.convertAllEntityToJson(entity.getTemplateGroups()));
+        stackJson.setTemplateGroups(templateGroups);
         stackJson.setMetadata(metaDataConverter.convertAllEntityToJson(entity.getInstanceMetaData()));
         if (entity.getCluster() != null) {
             stackJson.setCluster(clusterConverter.convert(entity.getCluster(), "{}"));
@@ -79,6 +89,10 @@ public class StackConverter extends AbstractConverter<StackJson, Stack> {
         stackJson.setAmbariServerIp(entity.getAmbariIp());
         stackJson.setUserName(entity.getUserName());
         stackJson.setPassword(entity.getPassword());
+        stackJson.setRegion(entity.getRegion());
+        List<TemplateGroupJson> templateGroups = new ArrayList<>();
+        templateGroups.addAll(templateGroupConverter.convertAllEntityToJson(entity.getTemplateGroups()));
+        stackJson.setTemplateGroups(templateGroups);
         if (entity.getCluster() != null) {
             stackJson.setCluster(clusterConverter.convert(entity.getCluster(), "{}"));
         } else {
@@ -94,6 +108,7 @@ public class StackConverter extends AbstractConverter<StackJson, Stack> {
         stack.setName(json.getName());
         stack.setUserName(json.getUserName());
         stack.setPassword(json.getPassword());
+        stack.setRegion(json.getRegion());
         try {
             stack.setCredential(credentialRepository.findOne(json.getCredentialId()));
         } catch (AccessDeniedException e) {
@@ -105,6 +120,7 @@ public class StackConverter extends AbstractConverter<StackJson, Stack> {
             throw new AccessDeniedException(String.format("Access to template '%s' is denied or template doesn't exist.", json.getTemplateId()), e);
         }
         stack.setStatus(Status.REQUESTED);
+        stack.setTemplateGroups(templateGroupConverter.convertAllJsonToEntity(json.getTemplateGroups(), stack));
         return stack;
     }
 
