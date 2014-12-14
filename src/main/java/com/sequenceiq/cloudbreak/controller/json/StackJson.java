@@ -21,17 +21,11 @@ import com.sequenceiq.cloudbreak.domain.Status;
 public class StackJson implements JsonEntity {
 
     private Long id;
-    @Min(value = 1, message = "The node count has to be greater than 0")
-    @Max(value = 100000, message = "The node count has to be less than 100000")
-    @Digits(fraction = 0, integer = 10, message = "The node count has to be a number")
-    private int nodeCount;
     @Size(max = 40, min = 5, message = "The length of the name has to be in range of 5 to 40")
     @Pattern(regexp = "([a-z][-a-z0-9]*[a-z0-9])",
             message = "The name can only contain lowercase alphanumeric characters and hyphens and has start with an alphanumeric character")
     @NotNull
     private String name;
-    @NotNull
-    private Long templateId;
     private String region;
     private String owner;
     private String account;
@@ -71,14 +65,6 @@ public class StackJson implements JsonEntity {
         this.id = id;
     }
 
-    public int getNodeCount() {
-        return nodeCount;
-    }
-
-    public void setNodeCount(int nodeCount) {
-        this.nodeCount = nodeCount;
-    }
-
     public String getName() {
         return name;
     }
@@ -101,14 +87,6 @@ public class StackJson implements JsonEntity {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public Long getTemplateId() {
-        return templateId;
-    }
-
-    public void setTemplateId(Long templateId) {
-        this.templateId = templateId;
     }
 
     public List<TemplateGroupJson> getTemplateGroups() {
