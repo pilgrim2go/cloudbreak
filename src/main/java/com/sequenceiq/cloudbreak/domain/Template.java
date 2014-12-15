@@ -131,5 +131,4 @@ public abstract class Template {
         this.volumeSize = volumeSize;
     }
 
-    public abstract Integer getMultiplier();
 }
