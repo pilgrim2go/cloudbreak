@@ -27,7 +27,6 @@ import com.sequenceiq.cloudbreak.domain.GccTemplate;
 import com.sequenceiq.cloudbreak.domain.Resource;
 import com.sequenceiq.cloudbreak.domain.ResourceType;
 import com.sequenceiq.cloudbreak.domain.Stack;
-import com.sequenceiq.cloudbreak.domain.Template;
 import com.sequenceiq.cloudbreak.domain.TemplateGroup;
 import com.sequenceiq.cloudbreak.repository.StackRepository;
 import com.sequenceiq.cloudbreak.service.PollingService;
@@ -65,23 +64,22 @@ public class GccAttachedDiskResourceBuilder extends GccSimpleInstanceResourceBui
     @Override
     public List<Resource> create(final GccProvisionContextObject po, int index, List<Resource> resources, final TemplateGroup templateGroup, final String region) throws Exception {
         final Stack stack = stackRepository.findById(po.getStackId());
-        final GccTemplate gccTemplate = (GccTemplate) stack.getTemplate();
         final GccCredential gccCredential = (GccCredential) stack.getCredential();
         final List<Resource> resourcesListTemp = new ArrayList<>();
         final String name = String.format("%s-%s-%s", stack.getName(), index, new Date().getTime());
 
         List<Future<Resource>> futures = new ArrayList<>();
-        for (int i = 0; i < gccTemplate.getVolumeCount(); i++) {
+        for (int i = 0; i < templateGroup.getTemplate().getVolumeCount(); i++) {
             final int indexVolume = i;
             Future<Resource> submit = intermediateBuilderExecutor.submit(new Callable<Resource>() {
                 @Override
                 public Resource call() throws Exception {
                     String value = name + "-" + indexVolume;
                     Disk disk = new Disk();
-                    disk.setSizeGb(gccTemplate.getVolumeSize().longValue());
+                    disk.setSizeGb(templateGroup.getTemplate().getVolumeSize().longValue());
                     disk.setName(value);
-                    disk.setKind(((GccTemplate) stack.getTemplate()).getGccRawDiskType().getUrl(po.getProjectId(), gccTemplate.getGccZone()));
-                    Compute.Disks.Insert insDisk = po.getCompute().disks().insert(po.getProjectId(), gccTemplate.getGccZone().getValue(), disk);
+                    disk.setKind(((GccTemplate) templateGroup.getTemplate()).getGccRawDiskType().getUrl(po.getProjectId(), GccZone.valueOf(region)));
+                    Compute.Disks.Insert insDisk = po.getCompute().disks().insert(po.getProjectId(), GccZone.valueOf(region).getValue(), disk);
                     Operation execute = insDisk.execute();
                     if (execute.getHttpErrorStatusCode() == null) {
                         Compute.ZoneOperations.Get zoneOperations = createZoneOperations(po.getCompute(), gccCredential, execute, GccZone.valueOf(region));
